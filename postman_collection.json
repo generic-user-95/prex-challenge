@@ -1,0 +1,320 @@
+{
+  "info": {
+    "_postman_id": "f5e921b7-4c3e-4d57-8902-61d9a24ec012",
+    "name": "Challenge PHP Hexagonal API",
+    "description": "API REST desarrollada con Arquitectura Hexagonal + DDD en Laravel 11 y autenticación OAuth2.0 con Laravel Passport.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login (Generate OAuth2 Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test(\"Response contains access_token and 30m expiration\", function () {",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('token_type', 'Bearer');",
+                  "    pm.expect(jsonData).to.have.property('expires_in', 1800);",
+                  "});",
+                  "",
+                  "// Automatización: almacenar token en el environment",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set(\"token\", jsonData.access_token);",
+                  "    pm.environment.set(\"user_id\", jsonData.user ? jsonData.user.id : 1);",
+                  "    console.log(\"Token automatically stored in environment variable 'token'\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Permite autenticar un usuario y obtener un token Bearer con expiración de 30 minutos (1800 segundos). El script de tests guarda automáticamente el token en la variable `{{token}}` del entorno."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. GIFs",
+      "item": [
+        {
+          "name": "Buscar GIFs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Response contains data array and pagination\", function () {",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/gifs/search?query=funny cat&limit=10&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gifs",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "funny cat",
+                  "description": "Requerido: Frase o término de búsqueda"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Opcional: Cantidad de resultados (máx. 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Opcional: Posición de inicio para paginación"
+                }
+              ]
+            },
+            "description": "Permite buscar GIFs por una frase o término. Requiere autenticación Bearer token."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar GIF por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/gifs/3o7TKxGqQz9h6yZ1qA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gifs",
+                "3o7TKxGqQz9h6yZ1qA"
+              ]
+            },
+            "description": "Obtiene la información detallada de un GIF específico por su ID. Requiere autenticación Bearer token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Favoritos",
+      "item": [
+        {
+          "name": "Guardar GIF Favorito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Response contains saved favorite details\", function () {",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('alias');",
+                  "    pm.expect(jsonData.data).to.have.property('gif_id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gif_id\": \"3o7TKxGqQz9h6yZ1qA\",\n  \"alias\": \"Mi Gato Favorito\",\n  \"user_id\": {{user_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gifs/favorites",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gifs",
+                "favorites"
+              ]
+            },
+            "description": "Almacena en base de datos un GIF como favorito para un usuario específico. Requiere autenticación Bearer token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Usuario",
+      "item": [
+        {
+          "name": "Obtener Perfil Usuario Autenticado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user"
+              ]
+            },
+            "description": "Verifica los datos del usuario autenticado a través del token OAuth2."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

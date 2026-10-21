@@ -1,0 +1,61 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: challenge_php_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "ChallengePHPHexagonal"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8000"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: challenge_db
+      DB_USERNAME: challenge_user
+      DB_PASSWORD: challenge_password
+      GIPHY_API_KEY: "${GIPHY_API_KEY:-}"
+      GIPHY_BASE_URL: "https://api.giphy.com/v1/gifs"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - challenge_network
+
+  db:
+    image: mysql:8.0
+    container_name: challenge_php_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: challenge_db
+      MYSQL_USER: challenge_user
+      MYSQL_PASSWORD: challenge_password
+    ports:
+      # Puerto de host mapeado a 3307 para evitar conflicto con instancias locales de MySQL que usen el puerto 3306
+      - "3307:3306"
+    volumes:
+      - challenge_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "challenge_user", "-pchallenge_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - challenge_network
+
+networks:
+  challenge_network:
+    driver: bridge
+
+volumes:
+  challenge_db_data:
+    driver: local
